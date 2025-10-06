@@ -9,7 +9,7 @@ const options = {
         info: {
             title: 'API des Activités', // titre affiché dans la doc
             version: '1.0.0', // version de ton API
-            description: 'Documentation de l’API des activités', // petite description
+            description: 'Géneration des activités, utilisaion de get, post, put et delete', // petite description
         },
     },
     // chemin vers les fichiers où Swagger doit chercher les commentaires @swagger
