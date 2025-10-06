@@ -4,6 +4,37 @@ import express from 'express';
 // On importe le routeur des activités (fichier séparé contenant toutes les routes CRUD)
 import activitiesRouter from "./routes/activities.mjs";
 
+// ======================
+// Partie Swagger
+// ======================
+
+// On importe Swagger JSDoc pour générer la documentation à partir des commentaires dans le code
+import swaggerJSDoc from 'swagger-jsdoc';
+
+// On importe Swagger UI Express pour afficher la documentation interactive dans le navigateur
+import swaggerUi from 'swagger-ui-express';
+
+// Définition des options de Swagger
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0', // Version OpenAPI
+        info: {
+            title: 'API des Activités', // Titre de la documentation
+            version: '1.0.0',           // Version de l'API
+            description: 'Documentation de l’API des activités', // Description
+        },
+    },
+    // Chemin vers les fichiers où Swagger va chercher les commentaires
+    apis: ['./routes/*.mjs'],
+};
+
+// Génération de la spécification Swagger
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+// ======================
+// Partie Express
+// ======================
+
 // On crée une application Express (le cœur du serveur)
 const app = express();
 
@@ -12,6 +43,9 @@ const port = process.env.PORT || 3000;
 
 // On indique à Express qu'il doit comprendre les corps de requêtes au format JSON
 app.use(express.json());
+
+// Middleware pour afficher la documentation Swagger à l’URL /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // On crée une route GET pour la racine du serveur (http://localhost:3000/)
 app.get('/', (req, res) => {
@@ -35,6 +69,6 @@ app.use(({ res }) => {
 app.listen(port, () => {
     // Message affiché dans la console lorsque le serveur démarre correctement
     console.log(`Express server listening at http://localhost:${port}`);
-    // Message supplémentaire d'information
-    console.log('You can open this URL in your browser to see "Hello World!".');
+    // Message indiquant où accéder à la documentation Swagger
+    console.log(`Documentation Swagger disponible sur http://localhost:${port}/api-docs`);
 });

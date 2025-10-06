@@ -4,17 +4,46 @@ import express from "express";
 // On importe la connexion à la base de données (db-activities.mjs)
 import { db } from "../db/db-activities.mjs";
 
-// Si besoin, on peut importer une fonction utilitaire (par exemple pour valider les IDs)
-// import { isValidId } from "../helper.mjs";
-
 // On crée un routeur Express pour gérer toutes les routes liées aux activités
 const activitiesRouter = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Activities
+ *   description: Gestion des activités
+ */
 
 // =====================================================================
 // ROUTE GET /api/activities
 // Récupère toutes les activités OU filtre selon un mot clé + limite optionnelle
 // =====================================================================
+/**
+ * @swagger
+ * /api/activities:
+ *   get:
+ *     summary: Récupère toutes les activités
+ *     description: Retourne toutes les activités ou filtrées par nom et limitées par un paramètre 'limit'.
+ *     tags: [Activities]
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Filtrer les activités par nom (au moins 3 caractères)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Limiter le nombre de résultats
+ *     responses:
+ *       200:
+ *         description: Liste des activités trouvées
+ *       400:
+ *         description: La chaîne de caractères recherchée doit contenir au moins 3 caractères
+ *       500:
+ *         description: Erreur serveur
+ */
 activitiesRouter.get("/", async (req, res) => {
     try {
         // On récupère le paramètre de recherche "name" dans l’URL (ex: ?name=ski)
@@ -56,11 +85,41 @@ activitiesRouter.get("/", async (req, res) => {
     }
 });
 
-
 // =====================================================================
 // ROUTE POST /api/activities
 // Permet d’ajouter une nouvelle activité
 // =====================================================================
+/**
+ * @swagger
+ * /api/activities:
+ *   post:
+ *     summary: Crée une nouvelle activité
+ *     tags: [Activities]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nom
+ *               - dateDebut
+ *               - durée
+ *             properties:
+ *               nom:
+ *                 type: string
+ *               dateDebut:
+ *                 type: string
+ *               durée:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Activité créée avec succès
+ *       400:
+ *         description: Champs manquants
+ *       500:
+ *         description: Erreur serveur
+ */
 activitiesRouter.post("/", async (req, res) => {
     try {
         // On récupère les données envoyées dans le corps de la requête
@@ -87,81 +146,105 @@ activitiesRouter.post("/", async (req, res) => {
     }
 });
 
-
 // =====================================================================
 // ROUTE PUT /api/activities/:id
 // Permet de modifier une activité existante
 // =====================================================================
+/**
+ * @swagger
+ * /api/activities/{id}:
+ *   put:
+ *     summary: Met à jour une activité
+ *     tags: [Activities]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de l’activité à mettre à jour
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nom
+ *               - dateDebut
+ *               - durée
+ *             properties:
+ *               nom:
+ *                 type: string
+ *               dateDebut:
+ *                 type: string
+ *               durée:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Activité mise à jour
+ *       400:
+ *         description: ID invalide ou champs manquants
+ *       404:
+ *         description: Activité non trouvée
+ */
 activitiesRouter.put('/:id', async (req, res) => {
     try {
-        // On récupère l’ID de l’activité à modifier dans l’URL
         const id = parseInt(req.params.id);
-
-        // On récupère les nouvelles données dans le corps de la requête
         const { nom, dateDebut, durée } = req.body;
 
-        // Vérification que l’ID est bien un nombre
-        if (isNaN(id)) {
-            return res.status(400).json({ error: "ID invalide" });
-        }
+        if (isNaN(id)) return res.status(400).json({ error: "ID invalide" });
+        if (!nom || !dateDebut || !durée) return res.status(400).json({
+            error: "Les champs 'nom', 'dateDebut' et 'durée' sont requis pour la mise à jour."
+        });
 
-        // Vérification que les champs requis sont présents
-        if (!nom || !dateDebut || !durée) {
-            return res.status(400).json({
-                error: "Les champs 'nom', 'dateDebut' et 'durée' sont requis pour la mise à jour."
-            });
-        }
-
-        // On met à jour l’activité dans la base de données
         const affectedRows = await db.updateActivities(id, { nom, dateDebut, durée });
+        if (affectedRows === 0) return res.status(404).json({ error: "Activité non trouvée pour la mise à jour." });
 
-        // Si aucune ligne n’a été modifiée, l’activité n’existe pas
-        if (affectedRows === 0) {
-            return res.status(404).json({ error: "Activité non trouvée pour la mise à jour." });
-        }
-
-        // On récupère l’activité mise à jour pour la renvoyer
         const activityUpdated = await db.getActivitiesById(id);
-
-        // On renvoie un message de confirmation + l’objet mis à jour
         res.json({ message: 'Activité mise à jour', activity: activityUpdated });
     } catch (error) {
-        // En cas d’erreur serveur
         res.status(500).json({ error: "Erreur serveur lors de la mise à jour de l'activité." });
     }
 });
-
 
 // =====================================================================
 // ROUTE DELETE /api/activities/:id
 // Supprime une activité selon son ID
 // =====================================================================
+/**
+ * @swagger
+ * /api/activities/{id}:
+ *   delete:
+ *     summary: Supprime une activité
+ *     tags: [Activities]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de l’activité à supprimer
+ *     responses:
+ *       200:
+ *         description: Activité supprimée
+ *       400:
+ *         description: ID invalide
+ *       404:
+ *         description: Activité non trouvée
+ */
 activitiesRouter.delete('/:id', async (req, res) => {
     try {
-        // On récupère l’ID à supprimer depuis l’URL
         const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: "ID invalide" });
 
-        // On vérifie que l’ID est bien un nombre
-        if (isNaN(id)) {
-            return res.status(400).json({ error: "ID invalide" });
-        }
-
-        // On appelle la méthode deleteActivities pour supprimer l’activité
         const result = await db.deleteActivities(id);
-
-        // Si la suppression a réussi
-        if (result.success) {
-            res.json({ message: 'Activité supprimée' });
-        } else {
-            // Si l’activité n’existe pas
-            res.status(404).json({ error: "Activité non trouvée pour la suppression." });
-        }
+        if (result.success) res.json({ message: 'Activité supprimée' });
+        else res.status(404).json({ error: "Activité non trouvée pour la suppression." });
     } catch (error) {
-        // En cas d’erreur serveur
         res.status(500).json({ error: "Erreur serveur lors de la suppression de l'activité." });
     }
 });
-
 
 // =====================================================================
 // On exporte le routeur pour pouvoir l’utiliser dans d’autres fichiers
