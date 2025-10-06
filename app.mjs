@@ -21,7 +21,7 @@ const swaggerOptions = {
         info: {
             title: 'API des Activités', // Titre de la documentation
             version: '1.0.0',           // Version de l'API
-            description: 'Documentation de l’API des activités', // Description
+            description: 'Géneration des activités, utilisaion de get, post, put et delete', // Description
         },
     },
     // Chemin vers les fichiers où Swagger va chercher les commentaires
